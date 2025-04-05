@@ -1,4 +1,17 @@
- LPC Spritesheet Character Generator
+> ⚠️ This is a visual-focused fork of the [Universal LPC Spritesheet Character Generator](https://github.com/sanderfrenken/Universal-LPC-Spritesheet-Character-Generator).  
+> All original functionality, credits, licensing, and contributors remain fully acknowledged and intact.
+
+# ✨ spritesheet.lovechan.cc — A Prettified Fork
+
+This fork retains the same sprite-building features from the original, but focuses on a **cleaner UI and improved experience** for both desktop and mobile users.
+
+🛠 **Try it live**: [https://spritesheet.lovechan.cc](https://spritesheet.lovechan.cc)
+
+🎨 **Goal**: Maintain full compatibility with existing LPC assets while refreshing the interface for modern use.
+
+---
+
+LPC Spritesheet Character Generator
  =============================================
 
 This generator attempts to include all [LPC](https://lpc.opengameart.org) created character art up to now.
