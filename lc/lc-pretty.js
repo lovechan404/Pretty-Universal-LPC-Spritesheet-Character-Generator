@@ -207,7 +207,129 @@ function addControlHoverInfo() {
 
 
 
-// Implementation with multiple fallbacks
+function setupAnimationCropping() {
+    // Store original generator functions
+    let originalGenerateSpritesheet = window.generateSpritesheet;
+    let originalDownloadSheet = window.downloadSheet;
+
+    // Override generation
+    window.generateSpritesheet = function() {
+        originalGenerateSpritesheet();
+        // Delay the crop to ensure canvas is ready
+        setTimeout(updateSpritesheetCrop, 100);
+    };
+
+    // Override download
+    window.downloadSheet = function() {
+        try {
+            const canvas = document.getElementById('spritesheet');
+            const tempCanvas = createCroppedCanvas(canvas);
+            
+            // Create a new canvas to handle potential tainting
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = tempCanvas.width;
+            exportCanvas.height = tempCanvas.height;
+            const ctx = exportCanvas.getContext('2d');
+            
+            // Fill with white background first
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            
+            // Then draw our content
+            ctx.drawImage(tempCanvas, 0, 0);
+            
+            triggerDownload(exportCanvas);
+        } catch (error) {
+            console.error('Download error:', error);
+            // Fallback to original download if our method fails
+            originalDownloadSheet();
+        }
+    };
+
+    // Add animation selector listener
+    document.getElementById('whichAnim')?.addEventListener('change', updateSpritesheetCrop);
+
+    function updateSpritesheetCrop() {
+        const canvas = document.getElementById('spritesheet');
+        const selected = document.querySelector('#whichAnim option:checked');
+        if (!canvas || !selected) return;
+
+        try {
+            const tempCanvas = createCroppedCanvas(canvas);
+            
+            // Replace original canvas content
+            const ctx = canvas.getContext('2d');
+            canvas.width = tempCanvas.width;
+            canvas.height = tempCanvas.height;
+            
+            // Clear with white background first
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Then draw our content
+            ctx.drawImage(tempCanvas, 0, 0);
+        } catch (error) {
+            console.error('Crop error:', error);
+            // If cropping fails, restore original canvas
+            originalGenerateSpritesheet();
+        }
+    }
+
+    function createCroppedCanvas(sourceCanvas) {
+        const selected = document.querySelector('#whichAnim option:checked');
+        const row = parseInt(selected.dataset.row);
+        const numFrames = parseInt(selected.dataset.num);
+        
+        const cropHeight = 64;
+        const cropWidth = numFrames * 64;
+        
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = cropWidth;
+        tempHeight = cropHeight;
+        
+        const ctx = tempCanvas.getContext('2d');
+        
+        // First fill with white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // Then attempt to draw the image
+        try {
+            ctx.drawImage(
+                sourceCanvas,
+                0, row * 64,
+                cropWidth, cropHeight,
+                0, 0,
+                cropWidth, cropHeight
+            );
+        } catch (error) {
+            console.warn('Partial canvas draw error:', error);
+        }
+        
+        return tempCanvas;
+    }
+
+    function triggerDownload(canvas) {
+        try {
+            const link = document.createElement('a');
+            link.download = 'character-' + document.getElementById('whichAnim').value + '.png';
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Final download error:', error);
+            // Ultimate fallback - prompt user to right-click save
+            const preview = document.getElementById('previewAnimations');
+            if (preview) {
+                preview.style.border = '2px solid red';
+                preview.title = 'Right-click and select "Save image as..."';
+                alert('Right-click on the animation preview and select "Save image as..."');
+            }
+        }
+    }
+}
+
 async function init() {
     // Wait for CSS to load
     await injectCustomCSS();
@@ -215,17 +337,22 @@ async function init() {
     // Try immediately
     if (groupSections()) {
         addControlHoverInfo();
+        setupAnimationCropping(); // Add this line
         return;
     }
 
     // Fallback 1: Wait for DOMContentLoaded
     document.addEventListener('DOMContentLoaded', () => {
-        if (groupSections()) return;
+        if (groupSections()) {
+            setupAnimationCropping(); // Add this line
+            return;
+        }
 
         // Fallback 2: Poll for elements (for dynamic content)
         const retryInterval = setInterval(() => {
             if (groupSections()) {
                 clearInterval(retryInterval);
+                setupAnimationCropping(); // Add this line
             }
         }, 100);
 
@@ -236,4 +363,7 @@ async function init() {
 
 // Start the process
 init();
+
+
+
 
